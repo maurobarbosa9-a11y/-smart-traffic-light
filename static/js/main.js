@@ -1,6 +1,7 @@
 /* ═══════════════════════════════════════════
-   Smart Traffic Light — Frontend JS
+   Smart Traffic Light — Frontend JS (CORRIGIDO)
    Canvas animado + métricas ao vivo + comparação
+   + Splash logo animada (rede neural + cruzamento)
 ═══════════════════════════════════════════ */
 
 // ── Tabs ──────────────────────────────────────────────────────────────────
@@ -15,7 +16,7 @@ document.querySelectorAll('.tab-btn').forEach(btn => {
 });
 
 // ═══════════════════════════════════════════════════════════════════════════
-// ESTADO DA SIMULAÇÃO (precisa vir ANTES do resizeCanvas)
+// ESTADO DA SIMULAÇÃO (ANTES de tudo que usa essas variáveis)
 // ═══════════════════════════════════════════════════════════════════════════
 let simRunning  = false;
 let simInterval = null;
@@ -23,6 +24,19 @@ let waitHistory = [];
 let lights  = { N: 'red', S: 'red', E: 'red', W: 'red' };
 let queues  = { N: 0, S: 0, E: 0, W: 0 };
 let vehicles = [];
+
+// ── Paleta de cores (ANTES do resizeCanvas / drawScene) ───────────────────
+const C = {
+  bg:     '#07152A',
+  road:   '#1A2E4A',
+  line:   '#4FC3F7',
+  grass:  '#0A1F1A',
+  red:    '#E53935',
+  yellow: '#FDD835',
+  green:  '#4CAF50',
+  cars:   ['#4FC3F7','#7C4DFF','#1B6EF3','#4CAF50','#FDD835'],
+  dim:    '#90CAF9',
+};
 
 // ═══════════════════════════════════════════════════════════════════════════
 // CANVAS RESPONSIVO
@@ -39,19 +53,6 @@ function resizeCanvas() {
 }
 window.addEventListener('resize', resizeCanvas);
 resizeCanvas();
-
-// ── Paleta de cores ───────────────────────────────────────────────────────
-const C = {
-  bg:     '#07152A',
-  road:   '#1A2E4A',
-  line:   '#4FC3F7',
-  grass:  '#0A1F1A',
-  red:    '#E53935',
-  yellow: '#FDD835',
-  green:  '#4CAF50',
-  cars:   ['#4FC3F7','#7C4DFF','#1B6EF3','#4CAF50','#FDD835'],
-  dim:    '#90CAF9',
-};
 
 // ── Veículos animados ─────────────────────────────────────────────────────
 function spawnVehicle(dir) {
@@ -89,24 +90,20 @@ function updateVehicles(greenPair) {
 function drawScene() {
   const W  = canvas.width, H = canvas.height;
   const cx = W / 2, cy = H / 2;
-  const rw = W * 0.12;   // meia-largura da via
+  const rw = W * 0.12;
 
-  // Fundo
   ctx.fillStyle = C.bg;
   ctx.fillRect(0, 0, W, H);
 
-  // Canteiros
   ctx.fillStyle = C.grass;
   [ [0, 0, cx-rw, cy-rw], [cx+rw, 0, cx-rw, cy-rw],
     [0, cy+rw, cx-rw, cy-rw], [cx+rw, cy+rw, cx-rw, cy-rw] ]
     .forEach(([x,y,w,h]) => ctx.fillRect(x, y, w, h));
 
-  // Pistas
   ctx.fillStyle = C.road;
   ctx.fillRect(cx-rw, 0, rw*2, H);
   ctx.fillRect(0, cy-rw, W, rw*2);
 
-  // Linhas de centro tracejadas
   ctx.strokeStyle = C.line;
   ctx.lineWidth   = Math.max(1, W*0.002);
   ctx.setLineDash([W*0.025, W*0.02]);
@@ -116,17 +113,14 @@ function drawScene() {
     });
   ctx.setLineDash([]);
 
-  // Interseção
   ctx.fillStyle = '#122030';
   ctx.fillRect(cx-rw, cy-rw, rw*2, rw*2);
 
-  // Zebra
   ctx.fillStyle = '#1E3A5A';
   for (let i = 0; i < 4; i++) {
     ctx.fillRect(cx-rw+4, cy-rw+i*(rw*0.4), rw*2-8, rw*0.18);
   }
 
-  // Semáforos nos 4 cantos
   const sp = {
     N: [cx-rw-W*0.055, cy-rw-W*0.055],
     S: [cx+rw+W*0.005, cy+rw+W*0.005],
@@ -141,13 +135,11 @@ function drawScene() {
     ctx.fillText(dir, sx + W*0.016, sy + W*0.115);
   });
 
-  // Filas visuais
   drawQueue('N', cx-rw+W*0.015, cy-rw-W*0.02, 0, -1, W);
   drawQueue('S', cx+W*0.015,    cy+rw+W*0.02, 0,  1, W);
   drawQueue('E', cx+rw+W*0.02,  cy-rw+W*0.015, 1, 0, W);
   drawQueue('W', cx-rw-W*0.02,  cy+W*0.015,   -1, 0, W);
 
-  // Veículos animados
   const cw = W*0.034, ch = W*0.022;
   vehicles.forEach(v => {
     ctx.fillStyle = v.color;
@@ -352,7 +344,6 @@ function drawCompareChart(histAI, histFixed, cycles) {
   const toX  = i  => pad.l+(i/(cycles-1))*iW;
   const toY  = v  => pad.t+iH-(v/maxV)*iH;
 
-  // Grade
   x.strokeStyle='#1B3A6E'; x.lineWidth=0.5;
   for (let i=0;i<=4;i++){
     const gy=pad.t+(i/4)*iH;
@@ -374,7 +365,6 @@ function drawCompareChart(histAI, histFixed, cycles) {
   drawLine(histFixed,'#E53935');
   drawLine(histAI,   '#4FC3F7');
 
-  // Legenda
   x.fillStyle='#4FC3F7'; x.fillRect(pad.l, H-22, 16, 3);
   x.fillStyle='#E8F4FD'; x.font='11px sans-serif'; x.textAlign='left';
   x.fillText('IA (Q-Learning)', pad.l+20, H-16);
@@ -382,3 +372,274 @@ function drawCompareChart(histAI, histFixed, cycles) {
   x.fillStyle='#E8F4FD'; x.fillText('Tempo Fixo', pad.l+180, H-16);
   x.fillStyle='#90CAF9'; x.textAlign='center'; x.fillText('Ciclos →', W/2, H-2);
 }
+
+// ═══════════════════════════════════════════════════════════════════════════
+// SPLASH LOGO ANIMADA (Rede Neural + Cruzamento Urbano + Semáforos vivos)
+// Aparece ao carregar a página. Clique fora da logo → some e libera o sistema.
+// ═══════════════════════════════════════════════════════════════════════════
+(function createAnimatedLogoSplash() {
+  // Overlay
+  const overlay = document.createElement('div');
+  overlay.id = 'logo-splash-overlay';
+  overlay.style.cssText = `
+    position: fixed; inset: 0; z-index: 99999;
+    background: rgba(5,13,26,0.92);
+    display: flex; align-items: center; justify-content: center;
+    cursor: pointer; transition: opacity 0.6s ease;
+  `;
+
+  // Container da logo (proporcional, sem distorção)
+  const logoBox = document.createElement('div');
+  logoBox.id = 'logo-splash-box';
+  logoBox.style.cssText = `
+    position: relative;
+    width: min(85vw, 480px);
+    height: min(85vw, 480px);
+    max-width: 480px; max-height: 480px;
+    border-radius: 16px;
+    overflow: hidden;
+    box-shadow: 0 0 60px rgba(0,191,255,0.35), 0 0 120px rgba(27,110,243,0.2);
+    cursor: default;
+  `;
+
+  // Canvas da animação
+  const logoCanvas = document.createElement('canvas');
+  logoCanvas.id = 'logo-anim-canvas';
+  logoCanvas.style.cssText = 'width:100%; height:100%; display:block;';
+  logoBox.appendChild(logoCanvas);
+
+  // Texto abaixo
+  const caption = document.createElement('div');
+  caption.style.cssText = `
+    position: absolute; bottom: 18px; left: 0; right: 0;
+    text-align: center; pointer-events: none;
+    font-family: 'Segoe UI', system-ui, sans-serif;
+  `;
+  caption.innerHTML = `
+    <div style="font-size:1.35rem; font-weight:700; color:#4FC3F7; letter-spacing:1px;">
+      SMART <span style="color:#1B6EF3;">TRAFFIC LIGHT</span>
+    </div>
+    <div style="font-size:0.72rem; color:#90CAF9; margin-top:6px; opacity:0.9;">
+      Controle de tráfego com IA · Cidades mais inteligentes, vias mais fluidas
+    </div>
+    <div style="font-size:0.65rem; color:#4FC3F7; margin-top:14px; opacity:0.7;">
+      Clique em qualquer lugar fora da logo para continuar
+    </div>
+  `;
+  logoBox.appendChild(caption);
+
+  overlay.appendChild(logoBox);
+  document.body.appendChild(overlay);
+
+  // --- Animação da logo (rede neural + cruzamento + semáforos piscando) ---
+  const lctx = logoCanvas.getContext('2d');
+  let animId = null;
+  let t = 0;
+
+  function resizeLogoCanvas() {
+    const size = Math.min(logoBox.clientWidth, logoBox.clientHeight, 480);
+    logoCanvas.width  = size;
+    logoCanvas.height = size;
+  }
+  resizeLogoCanvas();
+  window.addEventListener('resize', resizeLogoCanvas);
+
+  // Nós da rede neural (posições relativas)
+  const nodes = [];
+  for (let i = 0; i < 18; i++) {
+    const angle = (i / 18) * Math.PI * 2;
+    const r = 0.28 + (i % 3) * 0.08;
+    nodes.push({
+      x: 0.5 + Math.cos(angle) * r,
+      y: 0.42 + Math.sin(angle) * r * 0.85,
+      phase: Math.random() * Math.PI * 2,
+      speed: 0.02 + Math.random() * 0.03
+    });
+  }
+  // Nós centrais (cruzamento)
+  nodes.push({ x: 0.5, y: 0.42, phase: 0, speed: 0.04 });
+  nodes.push({ x: 0.5, y: 0.32, phase: 1, speed: 0.03 });
+  nodes.push({ x: 0.5, y: 0.52, phase: 2, speed: 0.03 });
+  nodes.push({ x: 0.38, y: 0.42, phase: 3, speed: 0.03 });
+  nodes.push({ x: 0.62, y: 0.42, phase: 4, speed: 0.03 });
+
+  function drawLogoFrame() {
+    const W = logoCanvas.width;
+    const H = logoCanvas.height;
+    if (W < 10) return;
+
+    lctx.fillStyle = '#050D1A';
+    lctx.fillRect(0, 0, W, H);
+
+    // Fundo com leve gradiente radial
+    const grd = lctx.createRadialGradient(W/2, H*0.42, 0, W/2, H*0.42, W*0.55);
+    grd.addColorStop(0, 'rgba(27,110,243,0.12)');
+    grd.addColorStop(1, 'rgba(5,13,26,0)');
+    lctx.fillStyle = grd;
+    lctx.fillRect(0, 0, W, H);
+
+    // Cruzamento (ruas)
+    const cx = W * 0.5, cy = H * 0.42;
+    const roadW = W * 0.11;
+
+    lctx.fillStyle = '#1A2E4A';
+    lctx.fillRect(cx - roadW, 0, roadW * 2, H * 0.75);
+    lctx.fillRect(0, cy - roadW, W, roadW * 2);
+
+    // Linhas centrais tracejadas
+    lctx.strokeStyle = '#4FC3F7';
+    lctx.lineWidth = Math.max(1.5, W * 0.004);
+    lctx.setLineDash([W*0.03, W*0.025]);
+    lctx.globalAlpha = 0.7 + 0.3 * Math.sin(t * 0.05);
+    lctx.beginPath();
+    lctx.moveTo(cx, 0); lctx.lineTo(cx, cy - roadW);
+    lctx.moveTo(cx, cy + roadW); lctx.lineTo(cx, H * 0.75);
+    lctx.moveTo(0, cy); lctx.lineTo(cx - roadW, cy);
+    lctx.moveTo(cx + roadW, cy); lctx.lineTo(W, cy);
+    lctx.stroke();
+    lctx.setLineDash([]);
+    lctx.globalAlpha = 1;
+
+    // Fluxo de luz nas vias (partículas)
+    for (let i = 0; i < 12; i++) {
+      const progress = ((t * 0.008 + i * 0.12) % 1);
+      const isVert = i % 2 === 0;
+      let px, py;
+      if (isVert) {
+        px = cx + (i % 4 - 1.5) * roadW * 0.35;
+        py = progress * H * 0.75;
+      } else {
+        px = progress * W;
+        py = cy + (i % 4 - 1.5) * roadW * 0.35;
+      }
+      lctx.beginPath();
+      lctx.arc(px, py, W * 0.008, 0, Math.PI * 2);
+      lctx.fillStyle = `rgba(79,195,247,${0.3 + 0.5 * Math.sin(t * 0.1 + i)})`;
+      lctx.fill();
+    }
+
+    // Conexões da rede neural
+    lctx.strokeStyle = 'rgba(79,195,247,0.25)';
+    lctx.lineWidth = 1;
+    for (let i = 0; i < nodes.length; i++) {
+      for (let j = i + 1; j < nodes.length; j++) {
+        const dx = nodes[i].x - nodes[j].x;
+        const dy = nodes[i].y - nodes[j].y;
+        const dist = Math.sqrt(dx*dx + dy*dy);
+        if (dist < 0.22) {
+          const alpha = 0.15 + 0.25 * Math.sin(t * 0.04 + i + j);
+          lctx.strokeStyle = `rgba(79,195,247,${alpha})`;
+          lctx.beginPath();
+          lctx.moveTo(nodes[i].x * W, nodes[i].y * H);
+          lctx.lineTo(nodes[j].x * W, nodes[j].y * H);
+          lctx.stroke();
+        }
+      }
+    }
+
+    // Nós da rede (pulsando)
+    nodes.forEach((n, i) => {
+      const pulse = 0.6 + 0.4 * Math.sin(t * n.speed * 10 + n.phase);
+      const r = W * (0.012 + 0.008 * pulse);
+      const x = n.x * W, y = n.y * H;
+
+      lctx.beginPath();
+      lctx.arc(x, y, r * 2.2, 0, Math.PI * 2);
+      lctx.fillStyle = `rgba(79,195,247,${0.08 * pulse})`;
+      lctx.fill();
+
+      lctx.beginPath();
+      lctx.arc(x, y, r, 0, Math.PI * 2);
+      lctx.fillStyle = i < 5 ? '#4FC3F7' : '#1B6EF3';
+      lctx.shadowColor = '#4FC3F7';
+      lctx.shadowBlur = 12 * pulse;
+      lctx.fill();
+      lctx.shadowBlur = 0;
+    });
+
+    // Semáforos nos 4 cantos (piscando em sequência)
+    const lightPositions = [
+      { x: cx - roadW - W*0.06, y: cy - roadW - W*0.06 }, // N
+      { x: cx + roadW + W*0.01, y: cy + roadW + W*0.01 }, // S
+      { x: cx + roadW + W*0.01, y: cy - roadW - W*0.06 }, // E
+      { x: cx - roadW - W*0.06, y: cy + roadW + W*0.01 }  // W
+    ];
+    const cycle = Math.floor(t / 40) % 4; // troca a cada ~40 frames
+
+    lightPositions.forEach((pos, idx) => {
+      const bw = W * 0.038, bh = W * 0.10, r = W * 0.013;
+      lctx.fillStyle = '#0A1F3A';
+      lctx.strokeStyle = '#1B6EF3';
+      lctx.lineWidth = 1.5;
+      lctx.beginPath();
+      lctx.roundRect(pos.x, pos.y, bw, bh, W * 0.01);
+      lctx.fill(); lctx.stroke();
+
+      // Vermelho / Amarelo / Verde
+      const phases = ['red', 'yellow', 'green'];
+      const colors = ['#E53935', '#FDD835', '#4CAF50'];
+      // Lógica de pisca: um par verde, outro vermelho, com amarelo de transição
+      let activePhase = 'red';
+      if (idx === 0 || idx === 1) { // N-S
+        if (cycle === 0) activePhase = 'green';
+        else if (cycle === 1) activePhase = 'yellow';
+        else activePhase = 'red';
+      } else { // E-W
+        if (cycle === 2) activePhase = 'green';
+        else if (cycle === 3) activePhase = 'yellow';
+        else activePhase = 'red';
+      }
+
+      phases.forEach((p, i) => {
+        const active = p === activePhase;
+        const ly = pos.y + bh * 0.18 + i * bh * 0.28;
+        lctx.beginPath();
+        lctx.arc(pos.x + bw/2, ly, r, 0, Math.PI * 2);
+        lctx.fillStyle = active ? colors[i] : '#1A2E4A';
+        if (active) {
+          lctx.shadowColor = colors[i];
+          lctx.shadowBlur = W * 0.025;
+        }
+        lctx.fill();
+        lctx.shadowBlur = 0;
+      });
+    });
+
+    // Anel externo tech
+    lctx.strokeStyle = `rgba(79,195,247,${0.25 + 0.15 * Math.sin(t * 0.03)})`;
+    lctx.lineWidth = 1.5;
+    lctx.beginPath();
+    lctx.arc(cx, cy, W * 0.38, 0, Math.PI * 2);
+    lctx.stroke();
+
+    // Pontos no anel
+    for (let i = 0; i < 24; i++) {
+      const a = (i / 24) * Math.PI * 2 + t * 0.008;
+      const rx = cx + Math.cos(a) * W * 0.38;
+      const ry = cy + Math.sin(a) * W * 0.38;
+      lctx.beginPath();
+      lctx.arc(rx, ry, 2.5, 0, Math.PI * 2);
+      lctx.fillStyle = i % 3 === 0 ? '#4FC3F7' : 'rgba(79,195,247,0.4)';
+      lctx.fill();
+    }
+
+    t++;
+    animId = requestAnimationFrame(drawLogoFrame);
+  }
+
+  drawLogoFrame();
+
+  // Clique fora da logo → remove overlay
+  overlay.addEventListener('click', (e) => {
+    if (e.target === overlay) {
+      cancelAnimationFrame(animId);
+      overlay.style.opacity = '0';
+      setTimeout(() => {
+        overlay.remove();
+      }, 600);
+    }
+  });
+
+  // Impede que clique dentro da logo feche
+  logoBox.addEventListener('click', (e) => e.stopPropagation());
+})();
