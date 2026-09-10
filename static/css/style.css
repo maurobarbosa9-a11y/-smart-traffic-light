@@ -1,0 +1,213 @@
+/* ═══════════════════════════════════════════
+   Smart Traffic Light — Estilos Globais
+   Paleta: #050D1A (fundo) | #1B6EF3 (azul) | #4FC3F7 (ciano)
+═══════════════════════════════════════════ */
+
+:root {
+  --bg:        #050D1A;
+  --bg2:       #0A1F3A;
+  --blue:      #1B6EF3;
+  --cyan:      #4FC3F7;
+  --purple:    #7C4DFF;
+  --green:     #4CAF50;
+  --yellow:    #FDD835;
+  --red:       #E53935;
+  --text:      #E8F4FD;
+  --text-dim:  #90CAF9;
+  --border:    #1B3A6E;
+  --card:      #0D2240;
+  --radius:    10px;
+}
+
+* { box-sizing: border-box; margin: 0; padding: 0; }
+
+body {
+  background: var(--bg);
+  color: var(--text);
+  font-family: 'Segoe UI', system-ui, sans-serif;
+  min-height: 100vh;
+}
+
+/* ── Header ─────────────────────────────── */
+header {
+  background: var(--bg2);
+  border-bottom: 1px solid var(--border);
+  padding: 14px 28px;
+  display: flex;
+  align-items: center;
+  gap: 14px;
+}
+header .logo { font-size: 1.4rem; font-weight: 700; color: var(--cyan); }
+header .logo span { color: var(--blue); }
+header .tagline { font-size: .78rem; color: var(--text-dim); margin-left: auto; }
+
+/* ── Tabs ────────────────────────────────── */
+.tabs {
+  display: flex;
+  gap: 4px;
+  padding: 12px 28px 0;
+  border-bottom: 1px solid var(--border);
+  background: var(--bg2);
+}
+.tab-btn {
+  background: none;
+  border: none;
+  color: var(--text-dim);
+  padding: 8px 20px;
+  border-radius: var(--radius) var(--radius) 0 0;
+  cursor: pointer;
+  font-size: .9rem;
+  transition: all .2s;
+}
+.tab-btn.active, .tab-btn:hover {
+  background: var(--bg);
+  color: var(--cyan);
+  border: 1px solid var(--border);
+  border-bottom: 1px solid var(--bg);
+}
+
+/* ── Layout principal ────────────────────── */
+.page { display: none; padding: 24px 28px; }
+.page.active { display: block; }
+
+.grid-sim {
+  display: grid;
+  grid-template-columns: 1fr 320px;
+  gap: 20px;
+  align-items: start;
+}
+
+/* ── Cards ───────────────────────────────── */
+.card {
+  background: var(--card);
+  border: 1px solid var(--border);
+  border-radius: var(--radius);
+  padding: 18px;
+}
+.card h3 {
+  font-size: .85rem;
+  color: var(--text-dim);
+  text-transform: uppercase;
+  letter-spacing: .08em;
+  margin-bottom: 14px;
+}
+
+/* ── Canvas ──────────────────────────────── */
+#sim-canvas {
+  width: 100%;
+  border-radius: var(--radius);
+  background: #07152A;
+  display: block;
+}
+
+/* ── Controles ───────────────────────────── */
+.controls { display: flex; flex-direction: column; gap: 12px; }
+
+.btn {
+  padding: 10px 0;
+  border: none;
+  border-radius: var(--radius);
+  cursor: pointer;
+  font-size: .9rem;
+  font-weight: 600;
+  width: 100%;
+  transition: opacity .2s;
+}
+.btn:hover { opacity: .85; }
+.btn:disabled { opacity: .4; cursor: default; }
+.btn-primary  { background: var(--blue);   color: #fff; }
+.btn-danger   { background: var(--red);    color: #fff; }
+.btn-outline  { background: transparent; border: 1px solid var(--border); color: var(--text-dim); }
+
+.select-row {
+  display: flex; flex-direction: column; gap: 4px;
+}
+.select-row label { font-size: .78rem; color: var(--text-dim); }
+.select-row select, .select-row input[type=range] {
+  background: var(--bg2);
+  border: 1px solid var(--border);
+  color: var(--text);
+  border-radius: 6px;
+  padding: 6px 10px;
+  width: 100%;
+  font-size: .85rem;
+}
+
+/* ── Métricas ────────────────────────────── */
+.metric-grid { display: grid; grid-template-columns: 1fr 1fr; gap: 10px; }
+.metric-box {
+  background: var(--bg2);
+  border: 1px solid var(--border);
+  border-radius: 8px;
+  padding: 10px;
+  text-align: center;
+}
+.metric-box .val {
+  font-size: 1.5rem;
+  font-weight: 700;
+  color: var(--cyan);
+}
+.metric-box .lbl { font-size: .7rem; color: var(--text-dim); margin-top: 2px; }
+
+/* ── Filas das vias ──────────────────────── */
+.queue-bars { display: flex; flex-direction: column; gap: 6px; margin-top: 6px; }
+.q-row { display: flex; align-items: center; gap: 8px; font-size: .82rem; }
+.q-label { width: 20px; color: var(--text-dim); }
+.q-bar-wrap { flex: 1; background: var(--bg2); border-radius: 4px; height: 10px; overflow: hidden; }
+.q-bar { height: 100%; background: var(--blue); border-radius: 4px; transition: width .3s; }
+.q-num { width: 24px; text-align: right; color: var(--text-dim); font-size: .78rem; }
+
+/* ── Semáforos status ────────────────────── */
+.lights-row { display: flex; justify-content: space-around; margin-top: 8px; }
+.light-box { display: flex; flex-direction: column; align-items: center; gap: 4px; }
+.light-circle {
+  width: 26px; height: 26px; border-radius: 50%;
+  border: 2px solid var(--border);
+  transition: background .3s, box-shadow .3s;
+}
+.light-circle.green  { background: var(--green);  box-shadow: 0 0 10px var(--green); }
+.light-circle.red    { background: var(--red);    box-shadow: 0 0 10px var(--red); }
+.light-circle.yellow { background: var(--yellow); box-shadow: 0 0 10px var(--yellow); }
+.light-lbl { font-size: .7rem; color: var(--text-dim); }
+
+/* ── Agente RL stats ─────────────────────── */
+.agent-stats { font-size: .78rem; color: var(--text-dim); line-height: 1.8; }
+.agent-stats span { color: var(--cyan); font-weight: 600; }
+
+/* ── Mini gráfico ao vivo ────────────────── */
+#live-chart { width: 100%; height: 100px; }
+
+/* ── Página Comparação ───────────────────── */
+.compare-controls {
+  display: flex; gap: 14px; flex-wrap: wrap;
+  align-items: flex-end; margin-bottom: 20px;
+}
+.compare-controls .select-row { min-width: 160px; }
+#compare-result { display: none; }
+
+.compare-cards {
+  display: grid;
+  grid-template-columns: 1fr 1fr 1fr;
+  gap: 16px;
+  margin-bottom: 20px;
+}
+.compare-card {
+  background: var(--card);
+  border: 1px solid var(--border);
+  border-radius: var(--radius);
+  padding: 16px;
+  text-align: center;
+}
+.compare-card.highlight { border-color: var(--cyan); }
+.compare-card .big { font-size: 2rem; font-weight: 700; color: var(--cyan); }
+.compare-card .sub { font-size: .75rem; color: var(--text-dim); margin-top: 4px; }
+.compare-card .label { font-size: .82rem; color: var(--text-dim); margin-bottom: 6px; }
+
+#compare-chart-wrap { background: var(--card); border: 1px solid var(--border); border-radius: var(--radius); padding: 18px; }
+#compare-chart { width: 100%; height: 280px; }
+
+/* ── Responsivo ──────────────────────────── */
+@media (max-width: 800px) {
+  .grid-sim { grid-template-columns: 1fr; }
+  .compare-cards { grid-template-columns: 1fr 1fr; }
+}

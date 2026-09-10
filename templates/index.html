@@ -1,0 +1,182 @@
+<!DOCTYPE html>
+<html lang="pt-BR">
+<head>
+  <meta charset="UTF-8"/>
+  <meta name="viewport" content="width=device-width, initial-scale=1.0"/>
+  <title>Smart Traffic Light — IA de Tráfego</title>
+  <link rel="stylesheet" href="/static/css/style.css"/>
+</head>
+<body>
+
+<!-- ── Header ──────────────────────────────────────────────────────────── -->
+<header>
+  <div class="logo">Smart <span>Traffic Light</span></div>
+  <div class="tagline">Controle de Tráfego com IA · Projeto Interdisciplinar 5</div>
+</header>
+
+<!-- ── Tabs ─────────────────────────────────────────────────────────────── -->
+<nav class="tabs">
+  <button class="tab-btn active" data-page="page-sim">🚦 Simulação</button>
+  <button class="tab-btn" data-page="page-compare">📊 Comparação IA vs Fixo</button>
+</nav>
+
+<!-- ════════════════════════════════════════════════════════════════════════
+     PÁGINA 1: SIMULAÇÃO
+════════════════════════════════════════════════════════════════════════ -->
+<div class="page active" id="page-sim">
+  <div class="grid-sim">
+
+    <!-- Canvas da simulação -->
+    <div>
+      <canvas id="sim-canvas"></canvas>
+    </div>
+
+    <!-- Painel lateral -->
+    <div class="controls">
+
+      <!-- Configurações -->
+      <div class="card">
+        <h3>⚙ Configurações</h3>
+        <div class="select-row">
+          <label>Modo de controle</label>
+          <select id="sel-mode">
+            <option value="ai">🤖 Inteligência Artificial (RL)</option>
+            <option value="fixed">⏱ Tempo Fixo</option>
+          </select>
+        </div>
+        <div class="select-row" style="margin-top:10px">
+          <label>Taxa de chegada de veículos: <strong id="spawn-val">0.4</strong></label>
+          <input type="range" id="sel-spawn" min="0.1" max="0.9" step="0.1" value="0.4"/>
+        </div>
+        <div style="margin-top:14px; display:flex; gap:8px;">
+          <button class="btn btn-primary" id="btn-start">▶ Iniciar</button>
+          <button class="btn btn-danger" id="btn-stop" disabled>⏹ Parar</button>
+        </div>
+      </div>
+
+      <!-- Métricas -->
+      <div class="card">
+        <h3>📈 Métricas ao Vivo</h3>
+        <div class="metric-grid">
+          <div class="metric-box"><div class="val" id="m-cycle">0</div><div class="lbl">Ciclos</div></div>
+          <div class="metric-box"><div class="val" id="m-waiting">0</div><div class="lbl">Em espera</div></div>
+          <div class="metric-box"><div class="val" id="m-passed">0</div><div class="lbl">Passaram</div></div>
+          <div class="metric-box"><div class="val" id="m-avgwait">0</div><div class="lbl">Espera média</div></div>
+        </div>
+      </div>
+
+      <!-- Filas por via -->
+      <div class="card">
+        <h3>🚗 Filas por Via</h3>
+        <div class="queue-bars">
+          {% for d in ['N','S','E','W'] %}
+          <div class="q-row">
+            <span class="q-label">{{ d }}</span>
+            <div class="q-bar-wrap"><div class="q-bar" id="q-bar-{{ d }}" style="width:0%"></div></div>
+            <span class="q-num" id="q-num-{{ d }}">0</span>
+          </div>
+          {% endfor %}
+        </div>
+      </div>
+
+      <!-- Status dos semáforos -->
+      <div class="card">
+        <h3>🚦 Semáforos</h3>
+        <div class="lights-row">
+          {% for d in ['N','S','E','W'] %}
+          <div class="light-box">
+            <div class="light-circle red" id="light-{{ d }}"></div>
+            <span class="light-lbl">{{ d }}</span>
+          </div>
+          {% endfor %}
+        </div>
+      </div>
+
+      <!-- Gráfico ao vivo -->
+      <div class="card">
+        <h3>📉 Tempo de Espera</h3>
+        <canvas id="live-chart"></canvas>
+      </div>
+
+      <!-- Agente RL -->
+      <div class="card" id="agent-box" style="display:none">
+        <h3>🤖 Agente RL</h3>
+        <div class="agent-stats">
+          ε (exploração): <span id="agent-epsilon">—</span><br/>
+          Q-Table: <span id="agent-qtable">—</span> estados<br/>
+          Recompensa total: <span id="agent-reward">—</span><br/>
+          Passos: <span id="agent-steps">—</span>
+        </div>
+      </div>
+
+    </div>
+  </div>
+</div>
+
+<!-- ════════════════════════════════════════════════════════════════════════
+     PÁGINA 2: COMPARAÇÃO
+════════════════════════════════════════════════════════════════════════ -->
+<div class="page" id="page-compare">
+
+  <div class="compare-controls">
+    <div class="select-row">
+      <label>Ciclos de simulação</label>
+      <select id="cmp-cycles">
+        <option value="50">50 ciclos (rápido)</option>
+        <option value="100" selected>100 ciclos</option>
+        <option value="200">200 ciclos (preciso)</option>
+      </select>
+    </div>
+    <div class="select-row">
+      <label>Taxa de chegada</label>
+      <select id="cmp-spawn">
+        <option value="0.2">Baixa (0.2)</option>
+        <option value="0.4" selected>Média (0.4)</option>
+        <option value="0.7">Alta (0.7)</option>
+      </select>
+    </div>
+    <button class="btn btn-primary" id="btn-compare" style="width:200px">▶ Executar Comparação</button>
+  </div>
+
+  <div id="compare-result">
+    <div class="compare-cards">
+      <div class="compare-card">
+        <div class="label">⏱ Espera Média — Tempo Fixo</div>
+        <div class="big" id="cmp-fixed-wait">—</div>
+        <div class="sub">ciclos por veículo</div>
+      </div>
+      <div class="compare-card highlight">
+        <div class="label">🤖 Espera Média — IA</div>
+        <div class="big" id="cmp-ai-wait">—</div>
+        <div class="sub">ciclos por veículo</div>
+      </div>
+      <div class="compare-card highlight">
+        <div class="label">⚡ Melhoria da IA</div>
+        <div class="big" id="cmp-improvement">—</div>
+        <div class="sub" id="cmp-label">—</div>
+      </div>
+    </div>
+    <div style="display:grid; grid-template-columns:1fr 1fr; gap:16px; margin-bottom:20px;">
+      <div class="compare-card">
+        <div class="label">🚗 Veículos passaram — Fixo</div>
+        <div class="big" id="cmp-fixed-pass">—</div>
+      </div>
+      <div class="compare-card highlight">
+        <div class="label">🚗 Veículos passaram — IA</div>
+        <div class="big" id="cmp-ai-pass">—</div>
+      </div>
+    </div>
+
+    <div id="compare-chart-wrap">
+      <h3 style="font-size:.85rem; color:var(--text-dim); margin-bottom:14px; text-transform:uppercase; letter-spacing:.08em">
+        📈 Tempo Médio de Espera por Ciclo — IA vs Tempo Fixo
+      </h3>
+      <canvas id="compare-chart"></canvas>
+    </div>
+  </div>
+
+</div>
+
+<script src="/static/js/main.js"></script>
+</body>
+</html>
