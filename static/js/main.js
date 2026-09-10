@@ -15,6 +15,16 @@ document.querySelectorAll('.tab-btn').forEach(btn => {
 });
 
 // ═══════════════════════════════════════════════════════════════════════════
+// ESTADO DA SIMULAÇÃO (precisa vir ANTES do resizeCanvas)
+// ═══════════════════════════════════════════════════════════════════════════
+let simRunning  = false;
+let simInterval = null;
+let waitHistory = [];
+let lights  = { N: 'red', S: 'red', E: 'red', W: 'red' };
+let queues  = { N: 0, S: 0, E: 0, W: 0 };
+let vehicles = [];
+
+// ═══════════════════════════════════════════════════════════════════════════
 // CANVAS RESPONSIVO
 // ═══════════════════════════════════════════════════════════════════════════
 const canvas = document.getElementById('sim-canvas');
@@ -29,14 +39,6 @@ function resizeCanvas() {
 }
 window.addEventListener('resize', resizeCanvas);
 resizeCanvas();
-
-// ── Estado da simulação ───────────────────────────────────────────────────
-let simRunning  = false;
-let simInterval = null;
-let waitHistory = [];
-let lights  = { N: 'red', S: 'red', E: 'red', W: 'red' };
-let queues  = { N: 0, S: 0, E: 0, W: 0 };
-let vehicles = [];
 
 // ── Paleta de cores ───────────────────────────────────────────────────────
 const C = {
