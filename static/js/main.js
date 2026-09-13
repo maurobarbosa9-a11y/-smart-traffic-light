@@ -690,15 +690,17 @@ document.getElementById('sel-spawn').addEventListener('input', e => {
 drawScene();
 applyLights();
 
-// Comparação (mantida)
+// Comparação IA vs Fixo (com gráfico restaurado)
 document.getElementById('btn-compare')?.addEventListener('click', async () => {
   const btn = document.getElementById('btn-compare');
   const cycles = parseInt(document.getElementById('cmp-cycles').value) || 100;
   const spawn = parseFloat(document.getElementById('cmp-spawn').value) || 0.4;
-  btn.disabled = true; btn.textContent = '⏳ Simulando...';
+  btn.disabled = true;
+  btn.textContent = '⏳ Simulando...';
   try {
     const res = await fetch('/api/compare', {
-      method: 'POST', headers: { 'Content-Type': 'application/json' },
+      method: 'POST',
+      headers: { 'Content-Type': 'application/json' },
       body: JSON.stringify({ cycles, spawn_rate: spawn })
     });
     const data = await res.json();
@@ -712,10 +714,86 @@ document.getElementById('btn-compare')?.addEventListener('click', async () => {
         ? `A IA foi ${data.improvement_pct}% mais eficiente no tempo médio de espera`
         : 'Os modos tiveram desempenho similar nesta execução';
     document.getElementById('compare-result').style.display = 'block';
+    drawCompareChart(data.history_ai, data.history_fixed, cycles);
   } finally {
-    btn.disabled = false; btn.textContent = '▶ Executar Comparação';
+    btn.disabled = false;
+    btn.textContent = '▶ Executar Comparação';
   }
 });
+
+function drawCompareChart(histAI, histFixed, cycles) {
+  const c = document.getElementById('compare-chart');
+  if (!c) return;
+  const x = c.getContext('2d');
+  c.width = c.offsetWidth || 700;
+  c.height = 260;
+  const W = c.width, H = c.height;
+  const pad = { t: 20, r: 20, b: 40, l: 50 };
+  const iW = W - pad.l - pad.r;
+  const iH = H - pad.t - pad.b;
+
+  x.clearRect(0, 0, W, H);
+  x.fillStyle = '#0D2240';
+  x.fillRect(0, 0, W, H);
+
+  if (!histAI || !histFixed || histAI.length < 2) return;
+
+  const maxV = Math.max(...histAI, ...histFixed, 1);
+  const toX = i => pad.l + (i / Math.max(cycles - 1, 1)) * iW;
+  const toY = v => pad.t + iH - (v / maxV) * iH;
+
+  x.strokeStyle = '#1B3A6E';
+  x.lineWidth = 0.5;
+  for (let i = 0; i <= 4; i++) {
+    const gy = pad.t + (i / 4) * iH;
+    x.beginPath();
+    x.moveTo(pad.l, gy);
+    x.lineTo(W - pad.r, gy);
+    x.stroke();
+    x.fillStyle = '#90CAF9';
+    x.font = '10px sans-serif';
+    x.textAlign = 'right';
+    x.fillText(((1 - i / 4) * maxV).toFixed(1), pad.l - 6, gy + 4);
+  }
+
+  function drawLine(data, color) {
+    x.strokeStyle = color;
+    x.lineWidth = 2;
+    x.beginPath();
+    data.forEach((v, i) => {
+      if (i === 0) x.moveTo(toX(i), toY(v));
+      else x.lineTo(toX(i), toY(v));
+    });
+    x.stroke();
+    const grad = x.createLinearGradient(0, pad.t, 0, pad.t + iH);
+    grad.addColorStop(0, color + '44');
+    grad.addColorStop(1, color + '00');
+    x.lineTo(toX(data.length - 1), pad.t + iH);
+    x.lineTo(toX(0), pad.t + iH);
+    x.closePath();
+    x.fillStyle = grad;
+    x.fill();
+  }
+
+  drawLine(histFixed, '#E53935');
+  drawLine(histAI, '#4FC3F7');
+
+  x.fillStyle = '#4FC3F7';
+  x.fillRect(pad.l, H - 22, 16, 3);
+  x.fillStyle = '#E8F4FD';
+  x.font = '11px sans-serif';
+  x.textAlign = 'left';
+  x.fillText('IA (Q-Learning)', pad.l + 20, H - 16);
+
+  x.fillStyle = '#E53935';
+  x.fillRect(pad.l + 160, H - 22, 16, 3);
+  x.fillStyle = '#E8F4FD';
+  x.fillText('Tempo Fixo', pad.l + 180, H - 16);
+
+  x.fillStyle = '#90CAF9';
+  x.textAlign = 'center';
+  x.fillText('Ciclos →', W / 2, H - 2);
+}
 
 /* ── Splash logo (estilo original: octógono + feixes + cérebro) ── */
 (function () {
